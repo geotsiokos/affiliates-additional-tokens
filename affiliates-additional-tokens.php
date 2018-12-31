@@ -37,15 +37,20 @@ add_action( 'admin_notices', 'aat_check_dependencies' );
  */
 function aat_check_dependencies() {
 	$active_plugins = get_option( 'active_plugins', array() );
-	$affiliates_is_active = in_array( 'affiliates/affiliates.php', $active_plugins ) || in_array( 'affiliates-pro/affiliates-pro.php', $active_plugins ) || in_array( 'affiliates-enterprise/affiliates-enterprise.php', $active_plugins );
-	//$woocommerce_is_active = in_array( 'woocommerce/woocommerce.php', $active_plugins );
-	
+	$affiliates_is_active = in_array( 'affiliates-pro/affiliates-pro.php', $active_plugins ) || in_array( 'affiliates-enterprise/affiliates-enterprise.php', $active_plugins );
 	if ( !$affiliates_is_active ) {
-		echo "<div class='error'><strong>Affiliates Initial Bonus</strong> plugin requires one of the <a href='http://wordpress.org/plugins/affiliates/'>Affiliates</a>, <a href='http://www.itthinx.com/shop/affiliates-pro/'>Affiliates Pro</a> or <a href='http://www.itthinx.com/shop/affiliates-enterprise/'>Affiliates Enterprise</a> plugins to be installed and activated.</div>";
+		echo wp_kses(
+			'<div class="error"><strong>Affiliates Additional Tokens</strong> plugin requires one of the <a href="http://www.itthinx.com/shop/affiliates-pro/">Affiliates Pro</a> or <a href="http://www.itthinx.com/shop/affiliates-enterprise/">Affiliates Enterprise</a> plugins to be installed and activated.</div>',
+			array(
+				'strong' => array(),
+				'a'      => array( 'href' => array() ),
+				'div'    => array( 'class' => array() ),
+			)
+		);
+	} else {
+		add_filter( 'affiliates_notifications_tokens', 'gt_affiliates_notifications_tokens' );
 	}
 }
-
-add_filter( 'affiliates_notifications_tokens', 'gt_affiliates_notifications_tokens' );
 
 /**
  * Set additional tokens for referral notification emails
@@ -54,12 +59,9 @@ add_filter( 'affiliates_notifications_tokens', 'gt_affiliates_notifications_toke
  * @return array $tokens
  */
 function gt_affiliates_notifications_tokens( $tokens ) {
-	
+
 	if ( isset( $tokens['affiliate_id'] ) ) {
-		if ( 
-			function_exists( 'affiliates_get_affiliate' ) &&
-			function_exists( 'affiliates_get_affiliate_user' )
-		) {
+		if ( function_exists( 'affiliates_get_affiliate_user' ) ) {
 			$user_id = affiliates_get_affiliate_user( $tokens['affiliate_id'] );
 			if ( isset( $user_id ) ) {
 				$tokens['affiliate_phone'] = get_user_meta( $user_id, 'phone', true );
