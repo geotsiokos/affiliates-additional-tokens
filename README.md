@@ -1,12 +1,12 @@
 # Additional tokens for Affiliates referral notifications
 
-Referral notifications
+## Referral notifications
 
 [affiliate_phone] Displays the phone number of the referring affiliate, if set <br />
 
 [company_name] Displays the company name of the referring affiliate, if set<br />
 
-Affiliate registration notifications
+## Affiliate registration notifications
 
 [referring_affiliate_phone] Displays the phone number of the referring affiliate<br />
 
