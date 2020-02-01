@@ -30,26 +30,28 @@ if ( !defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-add_action( 'admin_notices', 'aat_check_dependencies' );
+add_action( 'plugins_loaded', 'aat_init' );
+
+/**
+ * Initializing
+ */
+function aat_init() {
+	$dependencies = aat_check_dependencies();
+	if ( $dependencies ) {
+		add_filter( 'affiliates_notifications_tokens', 'aat_affiliates_notifications_tokens' );
+		add_filter( 'affiliates_registration_tokens', 'aat_affiliates_registration_tokens' );
+	}
+}
 
 /**
  * Check plugin dependencies
+ *
+ * @return bool
  */
 function aat_check_dependencies() {
 	$active_plugins = get_option( 'active_plugins', array() );
 	$affiliates_is_active = in_array( 'affiliates-pro/affiliates-pro.php', $active_plugins ) || in_array( 'affiliates-enterprise/affiliates-enterprise.php', $active_plugins );
-	if ( !$affiliates_is_active ) {
-		echo wp_kses(
-			'<div class="error"><strong>Affiliates Additional Tokens</strong> plugin requires one of the <a href="http://www.itthinx.com/shop/affiliates-pro/">Affiliates Pro</a> or <a href="http://www.itthinx.com/shop/affiliates-enterprise/">Affiliates Enterprise</a> plugins to be installed and activated.</div>',
-			array(
-				'strong' => array(),
-				'a'      => array( 'href' => array() ),
-				'div'    => array( 'class' => array() ),
-			)
-		);
-	} else {
-		add_filter( 'affiliates_notifications_tokens', 'gt_affiliates_notifications_tokens' );
-	}
+	return $affiliates_is_active;
 }
 
 /**
@@ -58,7 +60,7 @@ function aat_check_dependencies() {
  * @param array $tokens
  * @return array $tokens
  */
-function gt_affiliates_notifications_tokens( $tokens ) {
+function aat_affiliates_notifications_tokens( $tokens ) {
 
 	if ( isset( $tokens['affiliate_id'] ) ) {
 		if ( function_exists( 'affiliates_get_affiliate_user' ) ) {
@@ -69,6 +71,29 @@ function gt_affiliates_notifications_tokens( $tokens ) {
 			}
 		}
 	}
+	return $tokens;
+}
 
+/**
+ * Set additional tokens for registration notification emails
+ *
+ * @param array $tokens
+ * @return array $tokens
+ */
+function aat_affiliates_registration_tokens( $tokens ) {
+	if ( !class_exists( 'Affiliates_Service' ) ) {
+		require_once( AFFILIATES_CORE_DIR . 'lib/core/class-affiliates-service.php' );
+	}
+
+	$referrer_affiliate_id = Affiliates_Service::get_referrer_id();
+	if ( $referrer_affiliate_id ) {
+		$referrer_user_id = affiliates_get_affiliate_user( $referrer_affiliate_id );
+		if ( isset( $referrer_user_id ) ) {
+			$tokens['referring_affiliate_phone'] = get_user_meta( $referrer_user_id, 'phone', true );
+			$tokens['referring_affiliate_email'] = get_user_meta( $referrer_user_id, 'email', true );
+			$tokens['referring_affiliate_first_name'] = get_user_meta( $referrer_user_id, 'first_name', true );
+			$tokens['referring_affiliate_last_name'] = get_user_meta( $referrer_user_id, 'last_name', true );
+		}
+	}
 	return $tokens;
 }
